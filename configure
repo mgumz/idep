@@ -6,8 +6,14 @@ settings_gplusplus() {
     CXXFLAGS=
     LDD="g++"
     LDOUT="-o "
+    LDFLAGS=
     LIBS=
     LDSUF=
+}
+
+debug_settings_gplusplus() {
+    CXXFLAGS="-g"
+    LDFLAGS="-g"
 }
 
 settings_msvc() {
@@ -16,10 +22,15 @@ settings_msvc() {
     CXXFLAGS="/nologo /EHsc"
     LDD="link"
     LDOUT="/out:"
+    LDFLAGS="/nologo"
     LIBS=
     LDSUF=".exe"
 }
 
+debug_settings_msvc() {
+    CXXFLAGS="$CXXFLAGS /Z7"
+    LDFLAGS="/fixed:no /debug"
+}
 
 
 ##############################################################
@@ -84,6 +95,7 @@ EOF
             ;;
 
         --debug)
+            SET_DEBUG=1
             ;;
     esac
     shift
@@ -96,6 +108,17 @@ exec 3> .config.log
 exec 4> .config.mk
 
 check_system
+
+if [ "$SET_DEBUG" == 1 ]; then
+    case $CXX in 
+        "g++")
+            debug_settings_gplusplus
+            ;;
+        "cl")
+            debug_settings_msvc
+            ;;
+    esac
+fi
 
 echo "# idep's .config.mk" >&4
 echo "#_______________________" >&4
