@@ -7,7 +7,7 @@ helps design a better physical architecture of a project.
 
 supported compilers
 -------------------
-- g++ (4.1.2)
+- g++ (4.1.2, 4.2.2)
 - ms visual c (7)
 
 author(s)
