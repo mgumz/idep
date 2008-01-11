@@ -1,25 +1,14 @@
+ifeq ($(wildcard .config.mk),.config.mk)
+include .config.mk
+first: all
+else
+first:
+	@echo "run './configure' first"
+endif
+
 ###################################################
 
-CC_WIN32 = cl /c /nologo /EHsc
-CSUF_WIN32 = .obj
-CCOUT_WIN32 = /Fo
-LINK_WIN32 = link /nologo
-LSUF_WIN32 = .exe
-LINKOUT_WIN32 = /out:
-
-CC_UNIX = g++ -c
-CSUF_UNIX = .o
-CCOUT_UNIX = -o 
-LINK_UNIX = g++
-LSUF_UNIX = 
-LINKOUT_UNIX = -o 
-
-CC = $(CC_$(SYSTEM))
-CSUF = $(CSUF_$(SYSTEM))
-CCOUT = $(CCOUT_$(SYSTEM))
-LINK = $(LINK_$(SYSTEM))
-LINKOUT = $(LINKOUT_$(SYSTEM))
-LSUF = $(LSUF_$(SYSTEM))
+TARGETS = adep$(LDSUF) cdep$(LDSUF) ldep$(LDSUF)
 
 ###################################################
 
@@ -50,24 +39,28 @@ SRC_LDEP = \
 
 ###################################################
 
-all: adep$(LSUF) cdep$(LSUF) ldep$(LSUF)
+all: $(TARGETS)
 
 clean:
-	rm -fr $(SRC_ADEP:.cpp=$(CSUF)) $(SRC_LDEP:.cpp=$(CSUF)) $(SRC_CDEP:.cpp=$(CSUF))
+	rm -fr $(SRC_ADEP:.cpp=.o) $(SRC_LDEP:.cpp=.o) $(SRC_CDEP:.cpp=.o)
+
+distclean: clean
+	rm -f $(TARGETS)
+
 
 ###################################################
 
-adep$(LSUF) : $(SRC_ADEP:.cpp=$(CSUF))
-	$(LINK) $(LINKOUT)$@ $^
+adep$(LDSUF) : $(SRC_ADEP:.cpp=.o)
+	$(LDD) $(LDOUT)$@ $^
 
-cdep$(LSUF) : $(SRC_CDEP:.cpp=$(CSUF))
-	$(LINK) $(LINKOUT)$@ $^
+cdep$(LDSUF) : $(SRC_CDEP:.cpp=.o)
+	$(LDD) $(LDOUT)$@ $^
 
-ldep$(LSUF) : $(SRC_LDEP:.cpp=$(CSUF))
-	$(LINK) $(LINKOUT)$@ $^
+ldep$(LDSUF) : $(SRC_LDEP:.cpp=.o)
+	$(LDD) $(LDOUT)$@ $^
 
 ###################################################
 
-%$(CSUF) : %.cpp
-	$(CC) $(CCOUT)$@ $<
+%$.o : %.cpp
+	$(CXX) $(CXXOUT)$@ $(CXXFLAGS) $<
 
