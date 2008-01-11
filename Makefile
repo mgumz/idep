@@ -61,10 +61,10 @@ adep$(LSUF) : $(SRC_ADEP:.cpp=$(CSUF))
 	$(LINK) $(LINKOUT)$@ $^
 
 cdep$(LSUF) : $(SRC_CDEP:.cpp=$(CSUF))
-	$(LINK) -out:$@ $^
+	$(LINK) $(LINKOUT)$@ $^
 
 ldep$(LSUF) : $(SRC_LDEP:.cpp=$(CSUF))
-	$(LINK) -out:$@ $^
+	$(LINK) $(LINKOUT)$@ $^
 
 ###################################################
 
