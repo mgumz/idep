@@ -12,5 +12,5 @@ to be compiled with a modern c++ compiler.
 supported compilers
 -------------------
 
-- MSVC7 (win32)
-
+- ms visual c (7)
+- g++ (4.1.2)
