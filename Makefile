@@ -1,7 +1,25 @@
 ###################################################
 
-CC = cl /c /nologo /EHsc
-LINK = link /nologo
+CC_WIN32 = cl /c /nologo /EHsc
+CSUF_WIN32 = .obj
+CCOUT_WIN32 = /Fo
+LINK_WIN32 = link /nologo
+LSUF_WIN32 = .exe
+LINKOUT_WIN32 = /out:
+
+CC_UNIX = g++ -c
+CSUF_UNIX = .o
+CCOUT_UNIX = -o 
+LINK_UNIX = g++
+LSUF_UNIX = 
+LINKOUT_UNIX = -o 
+
+CC = $(CC_$(SYSTEM))
+CSUF = $(CSUF_$(SYSTEM))
+CCOUT = $(CCOUT_$(SYSTEM))
+LINK = $(LINK_$(SYSTEM))
+LINKOUT = $(LINKOUT_$(SYSTEM))
+LSUF = $(LSUF_$(SYSTEM))
 
 ###################################################
 
@@ -32,24 +50,24 @@ SRC_LDEP = \
 
 ###################################################
 
-all: adep.exe cdep.exe ldep.exe
+all: adep$(LSUF) cdep$(LSUF) ldep$(LSUF)
 
 clean:
-	rm -fr $(SRC_ADEP:.cpp=.obj) $(SRC_LDEP:.cpp=.obj) $(SRC_CDEP:.cpp=.obj)
+	rm -fr $(SRC_ADEP:.cpp=$(CSUF)) $(SRC_LDEP:.cpp=$(CSUF)) $(SRC_CDEP:.cpp=$(CSUF))
 
 ###################################################
 
-adep.exe : $(SRC_ADEP:.cpp=.obj)
+adep$(LSUF) : $(SRC_ADEP:.cpp=$(CSUF))
+	$(LINK) $(LINKOUT)$@ $^
+
+cdep$(LSUF) : $(SRC_CDEP:.cpp=$(CSUF))
 	$(LINK) -out:$@ $^
 
-cdep.exe : $(SRC_CDEP:.cpp=.obj)
-	$(LINK) -out:$@ $^
-
-ldep.exe : $(SRC_LDEP:.cpp=.obj)
+ldep$(LSUF) : $(SRC_LDEP:.cpp=$(CSUF))
 	$(LINK) -out:$@ $^
 
 ###################################################
 
-%.obj : %.cpp
-	$(CC) $<
+%$(CSUF) : %.cpp
+	$(CC) $(CCOUT)$@ $<
 

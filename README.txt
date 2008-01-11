@@ -7,6 +7,8 @@ minor rewritten version of
 
 to be compiled with a modern c++ compiler.
 
+    http:/ourses/lib_design_03/notes/large.html
+
 supported compilers
 -------------------
 

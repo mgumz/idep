@@ -18,14 +18,14 @@ using namespace std;
 
                 // -*-*-*- static functions -*-*-*-
 
-ostream& warn(ostream& ing)
+static ostream& warn(ostream& ing)
 {
     return ing << "Warning: ";
 }
 
-static ostream& err(ostream& or)
+static ostream& err(ostream& error)
 {
-    return or << "Error: ";
+    return error << "Error: ";
 }
 
 static const char *stripDotSlash(const char *originalPath)
@@ -172,7 +172,7 @@ void idep_AliasDep::addIgnoreName(const char *fileName)
 
 int idep_AliasDep::readIgnoreNames(const char *file)
 {
-    return loadFromFile(file, this, idep_AliasDep::addIgnoreName);
+    return ::loadFromFile(file, this, idep_AliasDep::addIgnoreName);
 }
 
 const char *idep_AliasDep::addAlias(const char *alias, const char *component)
@@ -181,9 +181,9 @@ const char *idep_AliasDep::addAlias(const char *alias, const char *component)
                                         d_this->d_aliases.lookup(alias) : 0;
 }
 
-int idep_AliasDep::readAliases(ostream& or, const char *file)
+int idep_AliasDep::readAliases(ostream& error, const char *file)
 {
-    return idep_AliasUtil::readAliases(&d_this->d_aliases, or, file);
+    return idep_AliasUtil::readAliases(&d_this->d_aliases, error, file);
 }
 
 void idep_AliasDep::addFileName(const char *fileName)
