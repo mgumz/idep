@@ -17,9 +17,9 @@ using namespace std;
 
                 // -*-*-*- static functions -*-*-*-
 
-static ostream& err(ostream& or)
+static ostream& err(ostream& error)
 {
-    return or << "Error: ";
+    return error << "Error: ";
 }
 
 static const char *stripDotSlash(const char *originalPath)
@@ -64,7 +64,7 @@ static void loadFromStream(istream& in, idep_CompileDep *dep, Func add)
              while (it && '\n' != *it()) {
                 ++it;
             }
-            continue;                           // either !it or '\n'
+            continue;                           // either !it error '\n'
         }
         if ('\n' != *it()) {
             (dep->*add)(it());
@@ -117,7 +117,7 @@ static const char *search(idep_String *s, const idep_NameArray& a,
 
 // The following temporary, file-scope pointer variables are used
 // only during the recursive calls of a single static function, getDep()
-// in order to avoid the unnecessary time and space costs of passing
+// in errorder to avoid the unnecessary time and space costs of passing
 // several invariant arguments on the program stack.
 
 static idep_BinRel *s_dependencies_p;   // set just before first call to getDep
@@ -224,7 +224,7 @@ void idep_CompileDep::addIncludeDirectory(const char *dirName)
 
 int idep_CompileDep::readIncludeDirectories(const char *file)
 {
-    return loadFromFile(file, this, idep_CompileDep::addIncludeDirectory);
+    return loadFromFile(file, this, &idep_CompileDep::addIncludeDirectory);
 }
 
 void idep_CompileDep::addRootFile(const char *fileName)
@@ -234,18 +234,18 @@ void idep_CompileDep::addRootFile(const char *fileName)
 
 int idep_CompileDep::readRootFiles(const char *file)
 {
-    return loadFromFile(file, this, idep_CompileDep::addRootFile);
+    return loadFromFile(file, this, &idep_CompileDep::addRootFile);
 }
 
 void idep_CompileDep::inputRootFiles()
 {
     if (cin) {
-        loadFromStream(cin, this, idep_CompileDep::addRootFile);
-        cin.clear(0);             // reset eof for standard input
+        loadFromStream(cin, this, &idep_CompileDep::addRootFile);
+        cin.clear(ios::goodbit);             // reset eof for standard input
     }
 }
 
-int idep_CompileDep::calculate(ostream& or, int recursionFlag)
+int idep_CompileDep::calculate(ostream& error, int recursionFlag)
 {
     enum { BAD = -1, GOOD = 0 } status = GOOD;
 
@@ -260,19 +260,19 @@ int idep_CompileDep::calculate(ostream& or, int recursionFlag)
 
 
     // place all root files at the start of the relation
-
-    for (int i = 0; i < d_this->d_rootFiles.length(); ++i) {
+    int i;
+    for (i = 0; i < d_this->d_rootFiles.length(); ++i) {
         idep_String s;
         const char *file = d_this->d_rootFiles[i];
         const char *dirFile = search(&s, d_this->d_includeDirectories, file);
 
         if (!dirFile) {
-            err(or) << "root file \"" << file
+            err(error) << "root file \"" << file
                     << "\" not found." << endl;
             status = BAD;
         }
         else if (d_this->d_fileNames_p->add(dirFile) < 0) {
-            err(or) << "root file \"" << file
+            err(error) << "root file \"" << file
                     << "\" redundantly specified." << endl;
             status = BAD;
         }
@@ -290,7 +290,7 @@ int idep_CompileDep::calculate(ostream& or, int recursionFlag)
     s_files_p = d_this->d_fileNames_p;
     s_includes_p = &d_this->d_includeDirectories;
     s_recurse = recursionFlag;
-    s_err_p = &or;
+    s_err_p = &error;
 
     // Each translation unit forms the root of a tree of dependencies.
     // We will visit each node only once, recording the results as we go.
@@ -299,7 +299,7 @@ int idep_CompileDep::calculate(ostream& or, int recursionFlag)
     for (i = 0; i < d_this->d_numRootFiles; ++i) {
         const char *name = (*d_this->d_fileNames_p)[i];
         if (getDep(i)) {
-            err(or) << "could not determine all dependencies for \""
+            err(error) << "could not determine all dependencies for \""
                     << name << "\"." << endl;
             status = BAD;
         }

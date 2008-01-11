@@ -6,29 +6,29 @@
 
 #include <fstream>   // ifstream
 #include <iostream>
-#include <cassert> 
+#include <cassert>
 
 using namespace std;
 
                 // -*-*-*- static functions -*-*-*-
 
-static ostream& warning(ostream& or, const char *file, int lineno)
+static ostream& warning(ostream& error, const char *file, int lineno)
 {
-    return or << "Warning in " << file << '(' << lineno << "): ";
-}
- 
-static ostream& err(ostream& or, const char *file, int lineno)
-{
-    return or << "Error in " << file << '(' << lineno << "): ";
+    return error << "Warning in " << file << '(' << lineno << "): ";
 }
 
-static int tryToAlias(idep_AliasTable *table, ostream& or, 
-                      const char *inputName, int lineno, 
+static ostream& err(ostream& error, const char *file, int lineno)
+{
+    return error << "Error in " << file << '(' << lineno << "): ";
+}
+
+static int tryToAlias(idep_AliasTable *table, ostream& error,
+                      const char *inputName, int lineno,
                       const char *componentName, const char *alias)
 {
     if (table->add(alias, componentName) < 0) {
         const char *previousName = table->lookup(alias);
-        err(or, inputName, lineno) << "two names for alias \"" 
+        err(error, inputName, lineno) << "two names for alias \""
             << alias << "\":" << endl << "    \"" << previousName
             << "\" and \"" << componentName << "\"" << endl;
         return 1;
@@ -38,7 +38,7 @@ static int tryToAlias(idep_AliasTable *table, ostream& or,
 
                 // -*-*-*- idep_AliasUtil -*-*-*-
 
-int idep_AliasUtil::readAliases(idep_AliasTable *table, ostream& or, 
+int idep_AliasUtil::readAliases(idep_AliasTable *table, ostream& error,
                                         istream& in, const char *inputName)
 {
     // The following is a state-machine description of the alias language:
@@ -55,7 +55,7 @@ int idep_AliasUtil::readAliases(idep_AliasTable *table, ostream& or,
         IDENT_BL,       //    ident - blank line terminated
         NUM_STATES      // must be last entry
     } state = START;
- 
+
     enum Input {
         CONTINUE,       // continuation character by it self
         NEWLINE,        // end of line
@@ -63,7 +63,7 @@ int idep_AliasUtil::readAliases(idep_AliasTable *table, ostream& or,
         NUM_INPUTS      // must be last entry
     } input;
 
-    enum Action { 
+    enum Action {
         NOP,            // do nothing
         BEG_CUR,        // set component name to current token
         BEG_PRE,        // set component name to previous token
@@ -106,7 +106,7 @@ int idep_AliasUtil::readAliases(idep_AliasTable *table, ostream& or,
     const char COMMENT_CHAR = '#';
     const char CONTINUE_CHAR = '\\';
     const char NEWLINE_CHAR = '\n';
- 
+
     int numBadAliases = 0;
     int lineno = 1;
 
@@ -145,49 +145,49 @@ int idep_AliasUtil::readAliases(idep_AliasTable *table, ostream& or,
           } break;
           case BEG_PRE: {
             componentName = lastToken;
-            warning(or, inputName, lineno) << '"' << lastToken 
+            warning(error, inputName, lineno) << '"' << lastToken
                 << "\" << used as component name." << endl;
           } break;
           case BEG_PRE_CUR: {
             componentName = lastToken;
-            numBadAliases += tryToAlias(table, or, inputName, lineno,
+            numBadAliases += tryToAlias(table, error, inputName, lineno,
                                                         componentName, it());
-            warning(or, inputName, lineno) << '"' << lastToken 
+            warning(error, inputName, lineno) << '"' << lastToken
                 << "\" << used as component name." << endl;
           } break;
           case TRY_CUR: {
-            numBadAliases += tryToAlias(table, or, inputName, lineno,
+            numBadAliases += tryToAlias(table, error, inputName, lineno,
                                                         componentName, it());
           } break;
           case TRY_PRE: {
-            numBadAliases += tryToAlias(table, or, inputName, lineno,
+            numBadAliases += tryToAlias(table, error, inputName, lineno,
                                                    componentName, lastToken);
-            warning(or, inputName, lineno) << '"' << lastToken 
+            warning(error, inputName, lineno) << '"' << lastToken
                 << "\" << used as alias name." << endl;
           } break;
           case TRY_PRE_CUR: {
-            numBadAliases += tryToAlias(table, or, inputName, lineno,
+            numBadAliases += tryToAlias(table, error, inputName, lineno,
                                                    componentName, lastToken);
-            numBadAliases += tryToAlias(table, or, inputName, lineno,
+            numBadAliases += tryToAlias(table, error, inputName, lineno,
                                                         componentName, it());
-            warning(or, inputName, lineno) << '"' << lastToken 
+            warning(error, inputName, lineno) << '"' << lastToken
                 << "\" << used as alias name." << endl;
           } break;
           case END: {
             componentName = EMPTY_NAME;
           } break;
-          default: 
+          default:
           case NUM_ACTIONS: {
             assert(0);
           }
         };
 
         // Advance to the next state:
-                
+
         if (NEWLINE == input) {
             ++lineno;                           // end of line
         }
-        
+
         lastToken = it();
         lastInput = input;
 
@@ -198,7 +198,7 @@ int idep_AliasUtil::readAliases(idep_AliasTable *table, ostream& or,
 }
 
 
-int idep_AliasUtil::readAliases(idep_AliasTable *table, ostream& or, 
+int idep_AliasUtil::readAliases(idep_AliasTable *table, ostream& error,
                                                         const char *fileName)
 {
     enum { IOERROR = -1 };
@@ -206,6 +206,6 @@ int idep_AliasUtil::readAliases(idep_AliasTable *table, ostream& or,
     if (!in) {
         return IOERROR;
     }
-    return readAliases(table, or, in, fileName);
+    return readAliases(table, error, in, fileName);
 }
-   
+

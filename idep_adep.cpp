@@ -23,9 +23,9 @@ static ostream& warn(ostream& ing)
     return ing << "Warning: ";
 }
 
-static ostream& err(ostream& error)
+static ostream& err(ostream& ing )
 {
-    return error << "Error: ";
+    return ing << "Error: ";
 }
 
 static const char *stripDotSlash(const char *originalPath)
@@ -172,7 +172,7 @@ void idep_AliasDep::addIgnoreName(const char *fileName)
 
 int idep_AliasDep::readIgnoreNames(const char *file)
 {
-    return ::loadFromFile(file, this, idep_AliasDep::addIgnoreName);
+    return ::loadFromFile(file, this, &idep_AliasDep::addIgnoreName);
 }
 
 const char *idep_AliasDep::addAlias(const char *alias, const char *component)
@@ -193,14 +193,14 @@ void idep_AliasDep::addFileName(const char *fileName)
 
 int idep_AliasDep::readFileNames(const char *file)
 {
-    return loadFromFile(file, this, idep_AliasDep::addFileName);
+    return loadFromFile(file, this, &idep_AliasDep::addFileName);
 }
 
 void idep_AliasDep::inputFileNames()
 {
     if (cin) {
-        loadFromStream(cin, this, idep_AliasDep::addFileName);
-        cin.clear(0);             // reset eof for standard input
+        loadFromStream(cin, this, &idep_AliasDep::addFileName);
+        cin.clear(ios::goodbit);             // reset eof for standard input
     }
 }
 
@@ -216,7 +216,8 @@ int idep_AliasDep::unpaired(ostream& out, ostream& ing, int suffixFlag) const
     idep_NameIndexMap printNames;   // Used to sort names for ease of use
                                     // during cut and past in the editor.
 
-    for (int i = 0; i < maxLength; ++i) {
+    int i;
+    for (i = 0; i < maxLength; ++i) {
         idep_AliasDepString s(d_this->d_fileNames[i]);
 
         if (d_this->d_ignoreNames.lookup(s) >= 0) {
@@ -298,12 +299,12 @@ int idep_AliasDep::unpaired(ostream& out, ostream& ing, int suffixFlag) const
     return printNames.length();
 }
 
-static char *th(int n)
+static const char *th(int n)
 {
     return 1 == n ? "st" : 2 == n ? "nd" : 3 == n ? "rd" : "th";
 }
 
-int idep_AliasDep::verify(ostream& or) const
+int idep_AliasDep::verify(ostream& error) const
 {
     enum { IOERROR = -1, GOOD = 0 } status = GOOD;
     int errorCount = 0; // keep track of the number of readable faulty files
@@ -342,18 +343,18 @@ int idep_AliasDep::verify(ostream& or) const
         }
 
         if (!it.isValidFile()) { // if the file was never valid to begin with
-            err(or) << "unable to open file \""
+            err(error) << "unable to open file \""
                     << path << "\" for read access." << endl;
             status = IOERROR;
         }
         else if (!it) {                         // header not found
-            err(or) << "corresponding include directive for \"" << path
+            err(error) << "corresponding include directive for \"" << path
                     << "\" not found."
                     << endl;
             ++errorCount;
         }
         else if (1 != directiveIndex) {         // header found but not first
-            err(or) << '"' << path
+            err(error) << '"' << path
                     << "\" contains corresponding include as "
                     << directiveIndex << th(directiveIndex)
                     << " directive." << endl;
@@ -367,7 +368,7 @@ int idep_AliasDep::verify(ostream& or) const
 }
 
 
-int idep_AliasDep::extract(ostream& out, ostream& or) const
+int idep_AliasDep::extract(ostream& out, ostream& error) const
 {
     enum { IOERROR = -1, GOOD = 0 } status = GOOD;
     enum { INVALID_INDEX = -1 };
@@ -381,7 +382,8 @@ int idep_AliasDep::extract(ostream& out, ostream& or) const
     idep_AliasDepIntArray verified(length);// verifies that guess was correct
     zero(&verified);
 
-    for (int i = 0; i < length; ++i) {
+    int i;
+    for (i = 0; i < length; ++i) {
         hmap[i] = INVALID_INDEX;   // set valid when a suitable header is found
 
         const char *path = d_this->d_fileNames[i];
@@ -400,14 +402,14 @@ int idep_AliasDep::extract(ostream& out, ostream& or) const
         idep_FileDepIter it(path);      // hook up with first dependency.
 
         if (!it.isValidFile()) {        // unable to read file
-            err(or) << "unable to open file \""
+            err(error) << "unable to open file \""
                     << path << "\" for read access." << endl;
             status = IOERROR;
             continue;                   // nothing more we can do here
         }
 
         if (!it) {                      // no include directives
-            err(or) << '"' << path
+            err(error) << '"' << path
                     << "\" contains no include directives." << endl;
             ++errorCount;
             continue;                   // nothing more we can do here
@@ -457,17 +459,17 @@ int idep_AliasDep::extract(ostream& out, ostream& or) const
 
     for (i = 0; i < uniqueHeaders.length(); ++i) {
         if (hits[i] > 1) {
-            warn(or) << hits[i] << " files specify \"" << uniqueHeaders[i]
+            warn(error) << hits[i] << " files specify \"" << uniqueHeaders[i]
                  << "\" as their first include directive:" << endl;
             for (int j = 0; j < length; ++j) {
                 if (i ==  hmap[j]) {
-                    or.width(FW);
-                    or << (verified[j] ? ARROW : "");
-                    or << '"' << stripDir(d_this->d_fileNames[j])
+                    error.width(FW);
+                    error << (verified[j] ? ARROW : "");
+                    error << '"' << stripDir(d_this->d_fileNames[j])
                        << '"' << endl;
                 }
             }
-            or << endl;
+            error << endl;
         }
     }
 

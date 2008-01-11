@@ -12,7 +12,8 @@
 #include <cctype>      // isascii() isspace()
 #include <cstring>     // strchr() strrchr() strlen() strcmp()
 #include <fstream>    // ifstream
-#include <strstream>  // ostrstream
+
+#include <sstream>  // ostringstream
 #include <iostream>
 #include <cassert>
 
@@ -25,9 +26,9 @@ static ostream& warn(ostream& ing, int index)
     return ing << "Warning<" << index << ">: "; // '<' and '>' match cycle
 }
 
-static ostream& err(ostream& or)
+static ostream& err(ostream& error)
 {
-    return or << "Error: ";
+    return error << "Error: ";
 }
 
 static const char *stripDotSlash(const char *originalPath)
@@ -107,7 +108,7 @@ struct idep_LinkDep_i {
 
     idep_NameIndexMap *d_componentNames_p;  // keys for relation
     idep_BinRel *d_dependencies_p;          // compile-time dependencies
-    int *d_map_p;                           // map to levelized order
+    int *d_map_p;                           // map to levelized errorder
     int *d_levels_p;                        // number of components per level
     int *d_levelNumbers_p;                  // level number for each component
     int *d_cycles_p;                        // labels components in each cycle
@@ -125,7 +126,7 @@ struct idep_LinkDep_i {
     int entry(const char *name, int suffixFlag);
     void loadDependencies(istream& in, int suffixFlag);
     void createCycleArray();
-    int calculate(ostream& or, int canonicalFlag, int suffixFlag);
+    int calculate(ostream& error, int canonicalFlag, int suffixFlag);
 };
 
 idep_LinkDep_i::idep_LinkDep_i()
@@ -217,7 +218,7 @@ void idep_LinkDep_i::loadDependencies(istream& in, int suffixFlag)
             while (it && '\n' != *it()) {
                 ++it;
             }
-            if (!it) {                               // either !it or '\n'
+            if (!it) {                               // either !it error '\n'
                 continue;
             }
         }
@@ -258,7 +259,8 @@ void idep_LinkDep_i::createCycleArray()
     // Members of each cycle are identified by the index of their first member.
 
     enum { NO_CYCLE = -1 };
-    for (int i = 0; i < d_numComponents; ++i) {
+    int i;
+    for (i = 0; i < d_numComponents; ++i) {
         d_cycles_p[i] = NO_CYCLE;       // Initially each entry is invalid.
         d_weights_p[i] = 0;             // Initially weight of each cycle is 0.
         d_cycleIndices_p[i] = NO_CYCLE; // Initially each entry is invalid.
@@ -273,7 +275,7 @@ void idep_LinkDep_i::createCycleArray()
     // index of the lowest participating component is used as a tag to
     // identify that cycle.  For each component we will scan ahead to see
     // on what other components this component is mutually dependent.
-    // If one or more is found, each of these locations will be set to
+    // If one error more is found, each of these locations will be set to
     // the index value of the first (primary) component in the cycle.
     // Ideally there will be no cycles, in which case each entry in the
     // array will be left set to -1.  We will use the cycle array initially
@@ -286,7 +288,8 @@ void idep_LinkDep_i::createCycleArray()
         }
         int cycleFound = 0;
         d_cycles_p[i] = i;          // first component in potential cycle
-        for (int j = i + 1; j < d_numComponents; ++j) {
+        int j;
+        for (j = i + 1; j < d_numComponents; ++j) {
             if (d_cycles_p[j] >= 0) {
                 continue;           // part of a previously reported cycle
             }
@@ -316,7 +319,7 @@ void idep_LinkDep_i::createCycleArray()
     }
 }
 
-int idep_LinkDep_i::calculate(ostream& or, int canonicalFlag, int suffixFlag)
+int idep_LinkDep_i::calculate(ostream& error, int canonicalFlag, int suffixFlag)
 {
     enum { IOERRR = -1 };
 
@@ -346,10 +349,11 @@ int idep_LinkDep_i::calculate(ostream& or, int canonicalFlag, int suffixFlag)
     // Now try to read dependencies from specified set of files.
     // If an I/O error occurs, abort; otherwise keep on processing.
 
-    for (int i = 0; i < d_dependencyFiles.length(); ++i) {
+    int i;
+    for (i = 0; i < d_dependencyFiles.length(); ++i) {
         const int INSANITY = 1000;
         if (d_dependencies_p->length() > INSANITY) {
-            or << "SANITY CHECK: Number of components is currently "
+            error << "SANITY CHECK: Number of components is currently "
                << d_dependencies_p->length() << " !!!!" << endl;
 
         }
@@ -358,12 +362,12 @@ int idep_LinkDep_i::calculate(ostream& or, int canonicalFlag, int suffixFlag)
 
         if ('\0' == *file) {
             loadDependencies(cin, suffixFlag);
-            cin.clear(0);         // reset eof for standard input
+            cin.clear(ios::goodbit);         // reset eof for standard input
         }
         else {
             ifstream in(file);
             if (!in) {
-                err(or) << "dependency file \"" << file
+                err(error) << "dependency file \"" << file
                         << "\" not found." << endl;
                 return IOERROR;
             }
@@ -388,7 +392,7 @@ int idep_LinkDep_i::calculate(ostream& or, int canonicalFlag, int suffixFlag)
     d_levelNumbers_p = new int[d_numComponents]; // will holds level #'s
 
     // Create the mapping array for component name indices.  This array
-    // will hold the sorted indices of the original component names.
+    // will hold the sorted indices of the erroriginal component names.
 
     d_map_p = new int[d_numComponents]; // array of levelized component indices
     int pIndex = 0;                     // current length of mapping
@@ -434,8 +438,8 @@ int idep_LinkDep_i::calculate(ostream& or, int canonicalFlag, int suffixFlag)
     createCycleArray();            // determine and label members of all cycles
 
     // We can now use the transitive dependency relation to sort the
-    // components in this system into levelized order (provided the
-    // graph is asyclic).  In order to facilitate the levelization
+    // components in this system into levelized errorder (provided the
+    // graph is asyclic).  In errorder to facilitate the levelization
     // algorithm, the principal members of each cycle will be temporarily
     // stripped of their dependency on the other members of that cycle.
     // All of the remaining members will be ignored by the levelization
@@ -467,7 +471,7 @@ int idep_LinkDep_i::calculate(ostream& or, int canonicalFlag, int suffixFlag)
     // dependencies.  If the principal member of the cycle depends only on
     // components at a level "weight" (or more) lower than the current level,
     // all other members are immediately appended to the list in their
-    // original order.  At this point, we restore the cyclic dependencies of
+    // erroriginal errorder.  At this point, we restore the cyclic dependencies of
     // that principal component on the other members of its cycle.  After
     // iterating through all of the components, the number of components on
     // the current level is appended to the level array and the current level
@@ -478,7 +482,8 @@ int idep_LinkDep_i::calculate(ostream& or, int canonicalFlag, int suffixFlag)
         int componentCount = 0;         // number of components on this level
         memset(current, 0, d_numComponents); // initially current level empty
 
-        for (int i = 0; i < d_numComponents; ++i) {
+        int i;
+        for (i = 0; i < d_numComponents; ++i) {
             if (d_cycles_p[i] >= 0 && d_cycles_p[i] != i) {
                 continue;   // component is non principal member of a cycle
             }
@@ -498,19 +503,20 @@ int idep_LinkDep_i::calculate(ostream& or, int canonicalFlag, int suffixFlag)
 
             int searchLevel = d_numLevels + 1 - weight; // allowed dependencies
 
-            for (int j = 0; j < d_numComponents; ++j) {
+            int j;
+            for (j = 0; j < d_numComponents; ++j) {
                 if (i == j) {
                     continue;
                 }
                 if (d_dependencies_p->get(i,j) && !lowerThan[searchLevel][j]) {
-                    break; // depends on component not at or below search level
+                    break; // depends on component not at error below search level
                 }
             }
             if (j < d_numComponents) {
                 continue;   // consider next candidate i
             }
             current[i] = 1; // record component as being at the current level
-            d_map_p[pIndex++] = i; // append component in levelized order
+            d_map_p[pIndex++] = i; // append component in levelized errorder
             ++componentCount;
             if (d_cycles_p[i] == i) {   // if principal member of a cycle
                 for (j = i + 1; j < d_numComponents; ++j) {
@@ -547,11 +553,12 @@ int idep_LinkDep_i::calculate(ostream& or, int canonicalFlag, int suffixFlag)
     }
 
     // Sort components within each level lexicographically to make names
-    // easier to find and to provide a canonical order to facilitate finding
+    // easier to find and to provide a canonical errorder to facilitate finding
     // differences as software is modified (e.g., via the Unix diff command).
 
     start = 0;
-    for (int k = 0; k < d_numLevels; ++k) {
+    int k;
+    for (k = 0; k < d_numLevels; ++k) {
         int top = start + d_levels_p[k];
         for (int i = start + 1; i < top; ++i) {
             for (int j = start; j < i; ++j) {
@@ -568,7 +575,7 @@ int idep_LinkDep_i::calculate(ostream& or, int canonicalFlag, int suffixFlag)
 
     // We can now uses the cycles array and the level map to create the
     // cycleIndex array.  This array assigns all components of each cycle
-    // a unique cycle index (in increasing order w.r.t. level).
+    // a unique cycle index (in increasing errorder w.r.t. level).
 
     int cycleCount = 0;
     for (i = 0; i < d_numComponents; ++i) {
@@ -598,10 +605,10 @@ int idep_LinkDep_i::calculate(ostream& or, int canonicalFlag, int suffixFlag)
     assert(cycleCount == d_numCycles);
 
     // Now sort components within each level again, but this time
-    // group cyclically dependent components together in order of
+    // group cyclically dependent components together in errorder of
     // cycle index to facilitate understanding of cycle composition.
     // The previous sort ensured that cycle indices will be in the
-    // order of the lexicographically smallest member of the cycle
+    // errorder of the lexicographically smallest member of the cycle
     // on a given level.
 
     start = 0;
@@ -656,7 +663,7 @@ int idep_LinkDep_i::calculate(ostream& or, int canonicalFlag, int suffixFlag)
     d_ccd = sum;        // Cache this value -- too hard to calculate later.
 
     if (canonicalFlag) {
-        // In order to ensure a canonical representations with redundant
+        // In errorder to ensure a canonical representations with redundant
         // dependencies removed, it is necessary to create a canonical
         // sorted binary relation based on the d_map_p array.  After removing
         // transitive entries from that relation, the results are then mapped
@@ -664,7 +671,8 @@ int idep_LinkDep_i::calculate(ostream& or, int canonicalFlag, int suffixFlag)
 
         idep_BinRel tmp(d_numComponents);
 
-        for (int i = 0; i < d_numComponents; ++i) {
+        int i;
+        for (i = 0; i < d_numComponents; ++i) {
             int u = d_map_p[i];
             for (int j = 0; j < d_numComponents; ++j) {
                 int v = d_map_p[j];
@@ -711,9 +719,9 @@ const char *idep_LinkDep::addAlias(const char *alias, const char *component)
                                         d_this->d_aliases.lookup(alias) : 0;
 }
 
-int idep_LinkDep::readAliases(ostream& or, const char *file)
+int idep_LinkDep::readAliases(ostream& error, const char *file)
 {
-    return idep_AliasUtil::readAliases(&d_this->d_aliases, or, file);
+    return idep_AliasUtil::readAliases(&d_this->d_aliases, error, file);
 }
 
 void idep_LinkDep::addUnaliasDirectory(const char *dirName)
@@ -758,9 +766,9 @@ int idep_LinkDep::readUnaliasDirectories(const char *file)
     return GOOD;
 }
 
-int idep_LinkDep::calculate(ostream& or, int canonicalFlag, int suffixFlag)
+int idep_LinkDep::calculate(ostream& error, int canonicalFlag, int suffixFlag)
 {
-    return d_this->calculate(or, canonicalFlag, suffixFlag);
+    return d_this->calculate(error, canonicalFlag, suffixFlag);
 }
 
 int idep_LinkDep::numComponents() const
@@ -906,14 +914,14 @@ void idep_LinkDep::printLevels(ostream& o, int longFlag, int supressFlag) const
             o << cit();
 
             if (numCycles() > 0 && !supressFlag) {
-                char field[100]; // will always be large enough
-                ostrstream f(field, sizeof field);
+
+                ostringstream f;
                 f << CY_LT << cit.cycle() << CY_RT << ends;
                 o.width(cycleFieldWidth);
                 if (cit.cycle()) {
-                    long int oldState = o.flags();
+                    ios::fmtflags oldState = o.flags();
                     o.setf(ios::left, ios::adjustfield);
-                    o << field;
+                    o << f.str();
                     o.flags(oldState);
                 }
                 else {
@@ -962,9 +970,7 @@ inline const char *s(int n) { return (n == 1) ? "" : "s"; }
 
 void idep_LinkDep::printSummary(ostream& o) const
 {
-    long iostate = o.setf(ios::left, ios::adjustfield);
-    const int FIELD_BUFFER_SIZE = 100;   // Not completely arbitrary -- this
-    char field[FIELD_BUFFER_SIZE];       // size will be always big enough!
+    ios::fmtflags iostate = o.setf(ios::left, ios::adjustfield);
     o << "SUMMARY:" << endl;
 
     const int N = 12;           // width of number field
@@ -973,74 +979,74 @@ void idep_LinkDep::printSummary(ostream& o) const
 
     if (numCycles() > 0) {
         {
-            ostrstream f(field, sizeof field);
+            ostringstream f;
             f.width(N);
             f << numCycles() << " Cycle" << s(numCycles()) << ends;
             o.width(W);
-            o << field;
+            o << f.str();
         }
         o.width(G);
         o << "";
         {
-            ostrstream f(field, sizeof field);
+            ostringstream f;
             f.width(N);
             f << numMembers() << " Members" << ends;
             o.width(W);
-            o << field;
+            o << f.str();
         }
         o << endl;
     }
     {
-        ostrstream f(field, sizeof field);
+        ostringstream f;
         f.width(N);
         f << numLocalComponents() << " Component"
                                   << s(numLocalComponents()) << ends;
         o.width(W);
-        o << field;
+        o << f.str();
     }
     o.width(G);
     o << "";
     {
-        ostrstream f(field, sizeof field);
+        ostringstream f;
         f.width(N);
         f << numLevels() << " Level" << s(numLevels()) << ends;
         o.width(W);
-        o << field;
+        o << f.str();
     }
     o.width(G);
     o << "";
     {
-        ostrstream f(field, sizeof field);
+        ostringstream f;
         f.width(N);
         f << numPackages() << " Package" << s(numPackages()) << ends;
         o.width(W);
-        o << field;
+        o << f.str();
     }
     o << endl;
     {
-        ostrstream f(field, sizeof field);
+        ostringstream f;
         f.width(N);
         f << ccd() << " CCD" << ends;
         o.width(W);
-        o << field;
+        o << f.str();
     }
     o.width(G);
     o << "";
     {
-        ostrstream f(field, sizeof field);
+        ostringstream f;
         f.width(N);
         f << acd() << " ACD" << ends;
         o.width(W);
-        o << field;
+        o << f.str();
     }
     o.width(G);
     o << "";
     {
-        ostrstream f(field, sizeof field);
+        ostringstream f;
         f.width(N);
         f << nccd() << " NCCD" << ends;
         o.width(W);
-        o << field;
+        o << f.str();
     }
     o << endl;
 
@@ -1392,7 +1398,7 @@ void idep_DependencyIter::operator++()
     do {
         ++d_this->d_col;
     }
-    while (*this &&                             // look in levelized order
+    while (*this &&                             // look in levelized errorder
            !d_this->d_dep.d_dependencies_p->get(d_this->d_row,
                                 d_this->d_dep.d_map_p[d_this->d_col]));
 }
@@ -1404,19 +1410,19 @@ idep_DependencyIter::operator const void *() const
 
 const char *idep_DependencyIter::operator()() const
 {
-    return (*d_this->d_dep.d_componentNames_p)[ // levelized order
+    return (*d_this->d_dep.d_componentNames_p)[ // levelized errorder
                                 d_this->d_dep.d_map_p[d_this->d_col]];
 }
 
 int idep_DependencyIter::level() const
 {
-    return d_this->d_dep.d_levelNumbers_p[      // levelized order
+    return d_this->d_dep.d_levelNumbers_p[      // levelized errorder
                                 d_this->d_dep.d_map_p[d_this->d_col]];
 }
 
 int idep_DependencyIter::cycle() const
 {
-    return d_this->d_dep.d_cycleIndices_p[      // levelized order
+    return d_this->d_dep.d_cycleIndices_p[      // levelized errorder
                                 d_this->d_dep.d_map_p[d_this->d_col]] + 1;
 }
 
