@@ -10,6 +10,20 @@ supported compilers
 - g++ (4.1.2, 4.2.2)
 - ms visual c (7)
 
+build
+-----
+
+GNU make
+^^^^^^^^
+if you have 'GNU make', just enter
+
+    ./configure
+
+in your $SHELL, and after that
+
+    make
+
+
 author(s)
 ---------
 the original author of the code is j. lakos, author of the book "large scale
