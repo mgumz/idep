@@ -5,27 +5,35 @@ idep
 "implemenation dependencies" among c/c++ files. to find these dependencies
 helps design a better physical architecture of a project.
 
-supported compilers
--------------------
+== supported compilers
 - g++ (4.1.2, 4.2.2)
 - ms visual c (7)
 
-build
------
+== build
 
-GNU make
-^^^^^^^^
+=== cmake
+
+to use 'cmake' just:
+
+    % mkdir build
+    % cd build
+    % cmake ..
+
+and then use your build-tool (make, visualstudio etc)
+
+=== GNU make
+
 if you have 'GNU make', just enter
 
-    ./configure
+    % ./configure
 
 in your $SHELL, and after that
 
-    make
+    % make
 
 
-author(s)
----------
+== author(s)
+
 the original author of the code is j. lakos, author of the book "large scale
 c++ software design".
 
@@ -39,3 +47,4 @@ the original code is available at:
 
 you can find the book at amazon or other bookstores as well.
 
+// vim:ft=asciidoc:
